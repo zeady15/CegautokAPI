@@ -23,5 +23,5 @@ public partial class User
 
     public int Permission { get; set; }
 
-    public virtual Privilege PermissionNavigation { get; set; } = null!;
+    public virtual Privilege? PermissionNavigation { get; set; } = null!;
 }
