@@ -1,10 +1,13 @@
-﻿using CegautokAPI.Models;
+﻿using CegautokAPI.DTOs;
+using CegautokAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Asn1.Mozilla;
 
 namespace CegautokAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
@@ -129,6 +132,39 @@ namespace CegautokAPI.Controllers
                     return BadRequest($"Hiba a törlés közben: {ex.Message}");
                 };
                 
+            }
+        }
+        [HttpGet("Jarmuvek/{id}")]
+        public IActionResult GetUserJarmu(int id)
+        {
+            using (var context = new FlottaContext())
+            {
+                try
+                {
+                    List<UserJarmuDTO> valasz = context.Kikuldottjarmus
+                        .Include(u => u.Kikuldetes)
+                        .Include(u => u.Gepjarmu)
+                        .Include(u => u.SoforNavigation)
+                        .Where(u => u.SoforNavigation.Id == id)
+                        .Select(u => new UserJarmuDTO()
+                        {
+                            Id = id,
+                            Name = u.SoforNavigation.Name,
+                            Kezdes = u.Kikuldetes.Kezdes,
+                            Rendszam = u.Gepjarmu.Rendszam
+                        }).ToList();
+                    return Ok(valasz);
+                }
+                catch(Exception ex) 
+                {
+                    List<UserJarmuDTO> valasz = new List<UserJarmuDTO>()
+                    {
+                        new()
+                        {
+                            Id = -1,
+                            Rendszam = "hiba" } }; 
+                    return BadRequest(valasz);
+                }
             }
         }
     }
