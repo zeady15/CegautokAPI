@@ -45,7 +45,7 @@ namespace CegautokAP.Controllers
 
         }
 
-        [HttpGet("Login")]
+        [HttpPost("Login")]
         public IActionResult Login(LoginDTO loginDTO)
         {
             using (var context = new FlottaContext())
