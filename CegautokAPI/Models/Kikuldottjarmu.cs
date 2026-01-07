@@ -13,9 +13,9 @@ public partial class Kikuldottjarmu
 
     public int Sofor { get; set; }
 
-    public virtual Gepjarmu ?Gepjarmu { get; set; } = null!;
+    public virtual Gepjarmu? Gepjarmu { get; set; } = null!;
 
-    public virtual Kikuldte ?Kikuldetes { get; set; } = null!;
+    public virtual Kikuldete? Kikuldetes { get; set; } = null!;
 
-    public virtual User ?SoforNavigation { get; set; } = null!;
+    public virtual User? SoforNavigation { get; set; } = null!;
 }

@@ -3,7 +3,6 @@ using CegautokAPI.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Asn1.Mozilla;
 
 namespace CegautokAPI.Controllers
 {
@@ -12,7 +11,7 @@ namespace CegautokAPI.Controllers
     public class UserController : ControllerBase
     {
         [HttpGet("Users")]
-        public IActionResult GetAll()
+        public IActionResult GetUsers()
         {
             using (var context = new FlottaContext())
             {
@@ -23,55 +22,51 @@ namespace CegautokAPI.Controllers
                 }
                 catch (Exception ex)
                 {
-                    List<User> valasz = new List<User>();
-                    User hiba = new User()
+                    List<User> valasz = new()
                     {
-                        Id = -1,
-                        Name = $"Hiba történt: {ex.Message}"
+                        new User { Id = -1,
+                                   Name = "Hiba történt: "+ex.Message,
+                        }
                     };
-                    valasz.Add(hiba);
                     return BadRequest(valasz);
                 }
             }
         }
 
         [HttpGet("UserById")]
-        public IActionResult GetById(int id)
+        public IActionResult GetUserById(int id)
         {
             using (var context = new FlottaContext())
             {
                 try
                 {
-                   User eredmeny = context.Users.FirstOrDefault(u => u.Id == id);
+                    User eredmeny = context.Users.Include(u => u.PermissionNavigation).FirstOrDefault(x=> x.Id == id);
                     if (eredmeny != null)
-                    {
                         return Ok(eredmeny);
-                    }
                     else
                     {
-                        User hiba = new User()
+                        User valasz = new User
                         {
                             Id = -1,
-                            Name = $"Hiba történt"
+                            Name = "Hiba történt: nincs ilyen azonosítójú felhasználó!",
                         };
-                        return NotFound(hiba);
+                        return NotFound(valasz);
                     }
                 }
                 catch (Exception ex)
                 {
-                    User hiba = new User()
-                    {
-                        Id = -1,
-                        Name = $"Hiba történt: {ex.Message}"
-                    };
-                    return BadRequest(hiba);
+                    User valasz = new User { Id = -1,
+                                             Name = "Hiba történt: "+ex.Message,
+                                  };
+                    return BadRequest(valasz);
                 }
             }
         }
+
         [HttpPost("NewUser")]
-        public IActionResult NewUser(User user)
+        public IActionResult PostUser(User user)
         {
-           using (var context = new FlottaContext())
+            using (var context = new FlottaContext())
             {
                 try
                 {
@@ -79,90 +74,88 @@ namespace CegautokAPI.Controllers
                     context.SaveChanges();
                     return Ok("Sikeres rögzítés");
                 }
-                catch(Exception ex)
-                { 
-                    return BadRequest($"Hiba a rögzítés közben: {ex.Message}");
+                catch (Exception ex)
+                {
+                    return BadRequest($"Hiba a rögzítés közben {ex.Message}");
                 }
             }
+        }
 
-        }
         [HttpPut("ModifyUser")]
-        public IActionResult ModifyUser(User user)
-        {
-            using(var context = new FlottaContext())
-            {
-                try
-                {
-                    context.Users.Update(user);
-                    context.SaveChanges();
-                    return Ok("Sikeres módosítás");
-                }
-                catch( Exception ex)
-                {
-                    User hiba = new User()
-                    {
-                        Id = -1,
-                        Name = $"Hiba a módosítás közben: {ex.Message}"
-                    };
-                    return BadRequest(hiba);
-                }
-            }
-        }
-        [HttpDelete("DelUser")]
-        public IActionResult DelUser(int id)
+        public IActionResult PutUser(User user)
         {
             using (var context = new FlottaContext())
             {
                 try
                 {
-                    if(context.Users.Select(u => u.Id).Contains(id))
+                    if (context.Users.Contains(user))
                     {
-                        User del = new User { Id = id };
-                        context.Users.Remove(del);
-                    context.SaveChanges();
-                    return Ok("Sikeres törlés");
+                        context.Users.Update(user);
+                        context.SaveChanges();
+                        return Ok("Sikeres rögzítés");
                     }
                     else
                     {
-                        return NotFound("Nincs ilyen Id");
+                        return NotFound("Nincs ilyen felhasználó!");
                     }
                 }
                 catch (Exception ex)
                 {
-                    return BadRequest($"Hiba a törlés közben: {ex.Message}");
-                };
-                
+                    return BadRequest($"Hiba a módosítás közben {ex.Message}");
+                }
             }
         }
-        [HttpGet("Jarmuvek/{id}")]
-        public IActionResult GetUserJarmu(int id)
+
+        [HttpDelete("DelUser")]
+        public IActionResult DeleteUser(int id)
         {
             using (var context = new FlottaContext())
             {
                 try
                 {
-                    List<UserJarmuDTO> valasz = context.Kikuldottjarmus
-                        .Include(u => u.Kikuldetes)
-                        .Include(u => u.Gepjarmu)
-                        .Include(u => u.SoforNavigation)
-                        .Where(u => u.SoforNavigation.Id == id)
-                        .Select(u => new UserJarmuDTO()
+                    if (context.Users.Select(u => u.Id).Contains(id))
+                    {
+                        context.Remove(new  User { Id = id });
+                        context.SaveChanges();
+                        return Ok("Sikeres törlés");
+                    }
+                    else
+                    {
+                        return NotFound("Nincs ilyen felhasználó!");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return BadRequest($"Hiba a törlés közben {ex.Message}");
+                }
+            }
+        }
+
+        [HttpGet("Jarmuvek/{id}")]
+        public IActionResult GetUserJarmuvek(int id) 
+        {
+            using (var context = new FlottaContext())
+            {
+                try
+                {
+                    List<UserJarmuvekDTO> valasz = context.Kikuldottjarmus
+                        .Include(k => k.Kikuldetes)
+                        .Include(k => k.Gepjarmu)
+                        .Include(k => k.SoforNavigation)
+                        .Where(k => k.SoforNavigation.Id == id)
+                        .Select(k => new UserJarmuvekDTO()
                         {
                             Id = id,
-                            Name = u.SoforNavigation.Name,
-                            Kezdes = u.Kikuldetes.Kezdes,
-                            Rendszam = u.Gepjarmu.Rendszam
-                        }).ToList();
+                            Name = k.SoforNavigation.Name,
+                            Kezdes = k.Kikuldetes.Kezdes,
+                            Rendszam = k.Gepjarmu.Rendszam
+                        })
+                        .ToList();
                     return Ok(valasz);
                 }
-                catch(Exception ex) 
+                catch (Exception ex)
                 {
-                    List<UserJarmuDTO> valasz = new List<UserJarmuDTO>()
-                    {
-                        new()
-                        {
-                            Id = -1,
-                            Rendszam = "hiba" } }; 
+                    List<UserJarmuvekDTO> valasz = new List<UserJarmuvekDTO>() { new UserJarmuvekDTO() { Id = id, Name = ex.Message } };
                     return BadRequest(valasz);
                 }
             }

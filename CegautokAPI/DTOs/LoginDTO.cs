@@ -2,7 +2,7 @@
 {
     public class LoginDTO
     {
-        public string LoginName { get; set; }
-        public string Hash { get; set; }
+        public string LoginName { get; set; } = null!;
+        public string SentHash { get; set; }
     }
 }

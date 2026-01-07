@@ -15,5 +15,5 @@ public partial class Gepjarmu
 
     public int Ulesek { get; set; }
 
-    public virtual ICollection<Kikuldottjarmu> ?Kikuldottjarmus { get; set; } = new List<Kikuldottjarmu>();
+    public virtual ICollection<Kikuldottjarmu>? Kikuldottjarmus { get; set; } = new List<Kikuldottjarmu>();
 }

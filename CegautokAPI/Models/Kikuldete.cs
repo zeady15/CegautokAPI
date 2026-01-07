@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CegautokAPI.Models;
 
-public partial class Kikuldte
+public partial class Kikuldete
 {
     public int Id { get; set; }
 
@@ -15,5 +15,5 @@ public partial class Kikuldte
 
     public DateTime Befejezes { get; set; }
 
-    public virtual ICollection<Kikuldottjarmu> ?Kikuldottjarmus { get; set; } = new List<Kikuldottjarmu>();
+    public virtual ICollection<Kikuldottjarmu>? Kikuldottjarmus { get; set; } = new List<Kikuldottjarmu>();
 }

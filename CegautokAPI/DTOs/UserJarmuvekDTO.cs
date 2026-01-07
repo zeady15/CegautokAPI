@@ -1,6 +1,6 @@
 ﻿namespace CegautokAPI.DTOs
 {
-    public class UserJarmuDTO
+    public class UserJarmuvekDTO
     {
         public int Id { get; set; }
         public string Name { get; set; } = null!;
