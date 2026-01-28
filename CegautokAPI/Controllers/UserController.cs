@@ -10,6 +10,8 @@ namespace CegautokAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+        private readonly FlottaContext _context;
+
         [HttpGet("Users")]
         public IActionResult GetUsers()
         {

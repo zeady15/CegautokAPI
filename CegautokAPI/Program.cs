@@ -1,10 +1,12 @@
 
 using CegautokAPI.Models;
+using FluentFTP;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Configuration;
+using System.Net;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,6 +16,26 @@ namespace CegautokAPI
 {
     public class Program
     {
+        private static FtpSettings ftpSettings = new FtpSettings();
+        public static async Task<string> UploadToFtpServer(Stream fileStream, string fileName)
+        {
+            try
+            {
+                NetworkCredential credential = new NetworkCredential(ftpSettings.FtpUser, ftpSettings.FtpPass);
+                await using (AsyncFtpClient client = new AsyncFtpClient(ftpSettings.Host, credential))
+                {
+                    client.Config.DataConnectionType = FtpDataConnectionType.AutoPassive;
+                    await client.Connect();
+                    await client.UploadStream(fileStream, ftpSettings.SubFolder + fileName);
+                    return fileName;
+                }
+            }
+            catch(Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
         private static MailSettings mailSettings = new MailSettings();
         public static string GenerateSalt()
         {
@@ -44,7 +66,7 @@ namespace CegautokAPI
         public static async Task SendEmail(string mailAddressTo, string subject, string body)
         {
             MailMessage mail = new MailMessage();
-            SmtpClient SmtpServer = new SmtpClient("smtp.gmail.com");           
+            SmtpClient SmtpServer = new SmtpClient(mailSettings.SmtpServer);           
             mail.To.Add(mailAddressTo);
             mail.Subject = subject;
             mail.Body = body;
@@ -82,6 +104,10 @@ namespace CegautokAPI
             //Mail settings
             builder.Configuration.GetSection("MailServices").Bind(mailSettings);
             builder.Services.AddSingleton(mailSettings);
+
+            //FTP settings
+            builder.Configuration.GetSection("FtpSettings").Bind(ftpSettings);
+            builder.Services.AddSingleton(ftpSettings);
 
             //JWT settings
             var jwtSettings = new Jwtsettings();
