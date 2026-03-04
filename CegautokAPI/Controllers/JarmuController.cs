@@ -13,17 +13,20 @@ namespace CegautokAPI.Controllers
     
     public class JarmuController : ControllerBase
     {
+        FlottaContext _context = new FlottaContext();
+        public JarmuController(FlottaContext context)
+        {
+            _context = context;
+        }
         //[Authorize]
         [HttpGet("{id}/Hasznalat")]
         
         public IActionResult GetHasznalatById(int id)
         {
-            using (var context = new FlottaContext())
-            {
                 try
                 {
                     
-                    List<JarmuHasznalatDTO> valasz = context.Kikuldottjarmus
+                    List<JarmuHasznalatDTO> valasz =_context.Kikuldottjarmus
                         .Include(k => k.Kikuldetes)
                         .Include(k => k.Gepjarmu)
                         .Where(j => j.GepjarmuId == id)
@@ -45,19 +48,18 @@ namespace CegautokAPI.Controllers
                     Rendszam = "hiba"} };
                     return BadRequest();
                 }
-            }
+            
         }
 
         [HttpGet("Sofor")]
 
         public IActionResult GetSofor()
         {
-            using (var context = new FlottaContext())
-            {
+            
                 try
                 {
 
-                    List<SoforDTO> valasz = context.Kikuldottjarmus
+                    List<SoforDTO> valasz = _context.Kikuldottjarmus
                         .Include(k => k.Gepjarmu)
                         .Include(k => k.SoforNavigation)
                         .GroupBy(p => new { rsz = p.Gepjarmu.Rendszam, so = p.SoforNavigation.Name })
@@ -76,7 +78,7 @@ namespace CegautokAPI.Controllers
                     Rendszam = "hiba"} };
                     return BadRequest();
                 }
-            }
+            
         }
     }
 }
