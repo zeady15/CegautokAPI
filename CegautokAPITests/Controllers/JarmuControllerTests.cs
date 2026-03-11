@@ -25,8 +25,9 @@ namespace CegautokAPI.Controllers.Tests
         [TestInitialize()]
         public void Init()
         {
-            var options = new DbContextOptionsBuilder<FlottaContext>().
-                UseInMemoryDatabase(databaseName: "TestDB").Options;
+            var options = new DbContextOptionsBuilder<FlottaContext>()
+                .UseInMemoryDatabase(databaseName: "TestDB")
+                .Options;
 
             _context = new FlottaContext(options);
 

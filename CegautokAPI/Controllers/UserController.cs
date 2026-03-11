@@ -11,15 +11,18 @@ namespace CegautokAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly FlottaContext _context;
+        
+        public UserController(FlottaContext context)
+        {
+            _context = context;
+        }
 
         [HttpGet("Users")]
         public IActionResult GetUsers()
         {
-            using (var context = new FlottaContext())
-            {
                 try
                 {
-                    List<User> users = context.Users.ToList();
+                    List<User> users = _context.Users.ToList();
                     return Ok(users);
                 }
                 catch (Exception ex)
@@ -32,17 +35,15 @@ namespace CegautokAPI.Controllers
                     };
                     return BadRequest(valasz);
                 }
-            }
+            
         }
 
         [HttpGet("UserById")]
         public IActionResult GetUserById(int id)
         {
-            using (var context = new FlottaContext())
-            {
-                try
+           try
                 {
-                    User eredmeny = context.Users.Include(u => u.PermissionNavigation).FirstOrDefault(x=> x.Id == id);
+                    User eredmeny = _context.Users.Include(u => u.PermissionNavigation).FirstOrDefault(x=> x.Id == id);
                     if (eredmeny != null)
                         return Ok(eredmeny);
                     else
@@ -62,38 +63,36 @@ namespace CegautokAPI.Controllers
                                   };
                     return BadRequest(valasz);
                 }
-            }
+            
         }
 
         [HttpPost("NewUser")]
         public IActionResult PostUser(User user)
         {
-            using (var context = new FlottaContext())
-            {
                 try
                 {
-                    context.Users.Add(user);
-                    context.SaveChanges();
+                    _context.Users.Add(user);
+                    _context.SaveChanges();
                     return Ok("Sikeres rögzítés");
                 }
                 catch (Exception ex)
                 {
                     return BadRequest($"Hiba a rögzítés közben {ex.Message}");
                 }
-            }
+            
         }
 
         [HttpPut("ModifyUser")]
         public IActionResult PutUser(User user)
         {
-            using (var context = new FlottaContext())
-            {
+           
+            
                 try
                 {
-                    if (context.Users.Contains(user))
+                    if (_context.Users.Contains(user))
                     {
-                        context.Users.Update(user);
-                        context.SaveChanges();
+                        _context.Users.Update(user);
+                        _context.SaveChanges();
                         return Ok("Sikeres rögzítés");
                     }
                     else
@@ -105,20 +104,20 @@ namespace CegautokAPI.Controllers
                 {
                     return BadRequest($"Hiba a módosítás közben {ex.Message}");
                 }
-            }
+            
         }
 
         [HttpDelete("DelUser")]
         public IActionResult DeleteUser(int id)
         {
-            using (var context = new FlottaContext())
-            {
+            
+            
                 try
                 {
-                    if (context.Users.Select(u => u.Id).Contains(id))
+                    if (_context.Users.Select(u => u.Id).Contains(id))
                     {
-                        context.Remove(new  User { Id = id });
-                        context.SaveChanges();
+                        _context.Remove(new  User { Id = id });
+                        _context.SaveChanges();
                         return Ok("Sikeres törlés");
                     }
                     else
@@ -130,7 +129,7 @@ namespace CegautokAPI.Controllers
                 {
                     return BadRequest($"Hiba a törlés közben {ex.Message}");
                 }
-            }
+            
         }
 
         [HttpGet("Jarmuvek/{id}")]
