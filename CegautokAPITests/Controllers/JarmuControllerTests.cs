@@ -1,119 +1,213 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using CegautokAPI.Controllers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CegautokAPI.Controllers;
 using CegautokAPI.Models;
-using Microsoft.EntityFrameworkCore;
+using CegautokAPI.Controllers;
+using CegautokAPI.Models;
 using Microsoft.AspNetCore.Mvc;
-using CegautokAPI.DTOs;
-using Microsoft.EntityFrameworkCore.InMemory;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace CegautokAPI.Controllers.Tests
+namespace CegautokAP.Tests
 {
-    [TestClass()]
+    [TestClass]
     public class GepjarmuControllerTests
     {
+        FlottaContext _context;
+        JarmuController _controller;
 
-
-        private FlottaContext _context;
-        private JarmuController _controller;
-
-        //Arrange
-        [TestInitialize()]
-        public void Init()
+        private FlottaContext CreateInMemoryContext(string dbName)
         {
             var options = new DbContextOptionsBuilder<FlottaContext>()
-                .UseInMemoryDatabase(databaseName: "TestDB")
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
+            return new FlottaContext(options);
+        }
 
-            _context = new FlottaContext(options);
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            _context = CreateInMemoryContext(nameof(TestInitialize));
+            _controller = new JarmuController(_context);
 
-            //Tesztadatok
-            var gepjarmu = new Gepjarmu()
+            var gepjarmu1 = new Gepjarmu
             {
                 Id = 1,
                 Rendszam = "ABC-123",
                 Marka = "Toyota",
-                Tipus = "Corolla",
+                Tipus = "Sedan",
                 Ulesek = 5
             };
 
-            var gepjarmu2 = new Gepjarmu()
+            var gepjarmu2 = new Gepjarmu
             {
                 Id = 2,
-                Rendszam = "BCD-234",
-                Marka = "BMW",
-                Tipus = "M2",
-                Ulesek = 2
+                Rendszam = "XYZ-789",
+                Marka = "Honda",
+                Tipus = "SUV",
+                Ulesek = 7
             };
 
-            var sofor1 = new User
-            {
-                Id = 1,
-                Name = "Kiss Pista",
-                LoginName = "kisspista",
-                Active = true,
-                Address = "Budapest, Fő utca 1.",
-                Email = "kp@email.com",
-                Hash = "hash",
-                Salt = "salt",
-                Phone = "123456789",
-                Image = "image.jpg",
-                Permission = 1
-            };
-
-            var sofor2 = new User
-            {
-                Id = 2,
-                Name = "Nagy Pista",
-                LoginName = "nagypista",
-                Active = true,
-                Address = "Miskolc, Fő utca 1.",
-                Email = "np@email.com",
-                Hash = "hash1",
-                Salt = "salt1",
-                Phone = "123456789",
-                Image = "nagyP.jpg",
-                Permission = 2
-            };
-
-            _context.AddRange(
-                new Kikuldottjarmu() { Id = 1, Gepjarmu = gepjarmu, Sofor = 1, SoforNavigation = sofor1, GepjarmuId = 1 },
-                new Kikuldottjarmu() { Id = 2, Gepjarmu = gepjarmu2, Sofor = 2, SoforNavigation = sofor2, GepjarmuId = 2 });
-
+            _context.Gepjarmus.AddRange(gepjarmu1, gepjarmu2);
             _context.SaveChanges();
+            _context.ChangeTracker.Clear();
             _controller = new JarmuController(_context);
+        }
+
+        [TestMethod]
+        public void GetAllGepjarmusTest()
+        {
+            //Arrange
+            //Act
+            //Assert
+
+            var result = _controller.GetAllGepjarmus();
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(OkObjectResult));
+            var okResult = (OkObjectResult)result;
+            Assert.IsNotNull(okResult);
+            Assert.IsInstanceOfType(okResult.Value, typeof(List<Gepjarmu>));
+            List<Gepjarmu> gepjarmus = (List<Gepjarmu>)okResult.Value;
+            Assert.IsNotNull(gepjarmus);
+            Assert.AreEqual(2, gepjarmus.Count);
+            Assert.AreEqual("ABC-123", gepjarmus[0].Rendszam);
 
         }
 
-        [TestMethod()]
-        public void GetSoforTest()
+        [TestMethod]
+        public void GetByIdTest()
         {
-            var result = _controller.GetSofor();
+            int existingid = 1;
+            int nonExistingId = 999;
 
-            var okResult = result as OkObjectResult;
+            var result = _controller.GetGepjarmuById(existingid);
+            var nonexistingResult = _controller.GetGepjarmuById(nonExistingId);
+
+            Assert.IsNotNull(nonexistingResult);
+            Assert.IsNotNull(result);
+
+            Assert.IsInstanceOfType(result, typeof(OkObjectResult));
+            Assert.IsInstanceOfType(nonexistingResult, typeof(BadRequestObjectResult));
+
+            var okResult = (OkObjectResult)result;
+            var badRequestResult = (BadRequestObjectResult)nonexistingResult;
+            Assert.IsNotNull(badRequestResult);
             Assert.IsNotNull(okResult);
 
-            //AZ adatok ellenőrzése
-            var data = okResult.Value as List<SoforDTO>;
-            Assert.IsNotNull(data);
-            Assert.AreEqual(2, data.Count);
+            Assert.IsInstanceOfType(okResult.Value, typeof(Gepjarmu));
 
-            // adattartalom ellenőrzése
-            var first = data[0];
-            Assert.AreEqual("Kiss Pista", first.SoforNev);
-            Assert.AreEqual("ABC-123", first.Rendszam);
-            Assert.AreEqual(1, first.Darab);
-
-            var second = data[1];
-            Assert.AreEqual("Nagy Pista", second.SoforNev);
-            Assert.AreEqual("BCD-234", second.Rendszam);
-            Assert.AreEqual(1, second.Darab);
+            Gepjarmu gepjarmu = (Gepjarmu)okResult.Value;
+            Assert.IsNotNull(gepjarmu);
+            Assert.AreEqual("ABC-123", gepjarmu.Rendszam);
+            Assert.AreEqual("Nincs ilyen gépjármű", badRequestResult.Value);
         }
 
+        [TestMethod]
+        public void AddNewGepjarmuTest()
+        {
+            var newGepjarmu = new Gepjarmu()
+            {
+                Id = 3,
+                Rendszam = "DEF-456",
+                Marka = "Ford",
+                Tipus = "Hatchback",
+                Ulesek = 5
+            };
+            var result = _controller.AddNewGepjarmu(newGepjarmu);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(ObjectResult));
+            var okresult = result as ObjectResult;
+            Assert.IsNotNull(okresult);
+            Assert.AreEqual(200, okresult.StatusCode);
+            Assert.AreEqual("Sikeres rögzítés", okresult.Value);
 
+            // hibás adatokkal
+            Gepjarmu invalidGepjarmu = null;
+            var resultHibas = _controller.AddNewGepjarmu(invalidGepjarmu);
+            Assert.IsNotNull(resultHibas);
+            Assert.IsInstanceOfType(resultHibas, typeof(BadRequestObjectResult));
+            var badRequestResult = (BadRequestObjectResult)resultHibas;
+            Assert.IsNotNull(badRequestResult);
+            Assert.IsInstanceOfType(badRequestResult.Value, typeof(string));
+            Assert.IsTrue(((string)badRequestResult.Value).StartsWith("Hiba történt a felvétel során:"));
+
+            // ha már létezik ilyen rendszámú gépjármű
+
+            Gepjarmu duplicateRendszam = new Gepjarmu()
+            {
+                Id = 4,
+                Rendszam = "ABC-123",
+                Marka = "Nissan",
+                Tipus = "Coupe",
+                Ulesek = 4
+            };
+
+            var resultletezo = _controller.AddNewGepjarmu(duplicateRendszam);
+            Assert.IsNotNull(duplicateRendszam);
+            Assert.IsInstanceOfType(resultletezo, typeof(BadRequestObjectResult));
+            Assert.IsNotNull(resultletezo);
+            Assert.AreEqual("Már van ilyen Id-val gépjármű!", ((BadRequestObjectResult)resultletezo).Value);
+
+        }
+
+        [TestMethod]
+        public void UpdateJarmuTest_NullError()
+        {
+            var nullResult = _controller.ModifyGepjarmu(null);
+            Assert.IsNotNull(nullResult);
+            Assert.IsInstanceOfType(nullResult, typeof(BadRequestObjectResult));
+        }
+
+        [TestMethod]
+        public void UpdateJarmuTest_InvalidIdError()
+        {
+            Gepjarmu invalidIdGepjarmu = new Gepjarmu()
+            {
+                Id = 0,
+                Rendszam = "INV-000",
+                Marka = "Toyota",
+                Tipus = "Sedan",
+                Ulesek = 5
+            };
+            var invalidIdResult = _controller.ModifyGepjarmu(invalidIdGepjarmu);
+            Assert.IsNotNull(invalidIdResult);
+            Assert.IsInstanceOfType(invalidIdResult, typeof(BadRequestObjectResult));
+        }
+
+        [TestMethod]
+        public void UpdateJarmuTest_Valid()
+        {
+            Gepjarmu existingGepjarmu = new Gepjarmu()
+            {
+                Id = 1,
+                Rendszam = "ABC-123",
+                Marka = "Toyota",
+                Tipus = "Hatchback",
+                Ulesek = 4
+            };
+
+            var result = _controller.ModifyGepjarmu(existingGepjarmu);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(OkObjectResult));
+            var okResult = (OkObjectResult)result;
+            Assert.IsNotNull(okResult.Value);
+
+            var updatedDbGepjarmu = _context.Gepjarmus.Find(1);
+            Assert.IsNotNull(updatedDbGepjarmu);
+            Assert.AreEqual("Hatchback", updatedDbGepjarmu.Tipus);
+            Assert.AreEqual(4, updatedDbGepjarmu.Ulesek);
+        }
+
+        [TestMethod]
+        public void DeleteJarmuTest_Valid()
+        {
+            int existingId = 1;
+            var result = _controller.DeleteGepjarmu(existingId);
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(OkObjectResult));
+            var okResult = (OkObjectResult)result;
+            Assert.IsNotNull(okResult.Value);
+            Assert.AreEqual("Sikeres törlés!", okResult.Value);
+            var deletedGepjarmu = _context.Gepjarmus.Find(existingId);
+            Assert.IsNull(deletedGepjarmu);
+        }
     }
 }
